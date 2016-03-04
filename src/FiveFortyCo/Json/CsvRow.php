@@ -1,8 +1,8 @@
 <?php
 
-namespace Keboola\Json;
+namespace FiveFortyCo\Json;
 
-use Keboola\Json\Exception\JsonParserException;
+use FiveFortyCo\Json\Exception\JsonParserException;
 
 class CsvRow
 {

@@ -1,12 +1,11 @@
 <?php
 
-namespace Keboola\Json;
-
+namespace FiveFortyCo\Json;
 use Keboola\CsvTable\Table;
 use Keboola\Temp\Temp;
 use Monolog\Logger;
-use Keboola\Json\Exception\JsonParserException,
-    Keboola\Json\Exception\NoDataException;
+use FiveFortyCo\Json\Exception\JsonParserException,
+    FiveFortyCo\Json\Exception\NoDataException;
 
 /**
  * JSON to CSV data analyzer and parser/converter
