@@ -21,4 +21,12 @@ foreach ($csvfiles as $fileIndex=>$file) {
 
   $attributes = $file->getAttributes();
 
+  echo "-----------\n";
+  var_dump($attributes);
+  echo "-----------\n";
+  foreach ($csvfile as $rownum=>$rowval) {
+      var_dump($rowval);
+  }
+
+
 }

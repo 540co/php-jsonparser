@@ -198,7 +198,7 @@ class Parser
 
         $parentCols = array_fill_keys(array_keys($parentId), "string");
 
-        foreach ($data as $row) {
+        foreach ($data as $rowNum=>$row) {
             // in case of non-associative array of strings
             // prepare {"data": $value} objects for each row
             if (is_scalar($row) || is_null($row)) {
@@ -212,7 +212,7 @@ class Parser
                 $row = (object) array_replace((array) $row, $parentId);
             }
 
-            $csvRow = $this->parseRow($row, $type, $parentCols);
+            $csvRow = $this->parseRow($rowNum, $row, $type, $parentCols);
 
             $csvFile->writeRow($csvRow->getRow());
         }
@@ -229,6 +229,7 @@ class Parser
      * @return CsvRow
      */
     protected function parseRow(
+        $rowNum,
         \stdClass $dataRow,
         $type,
         array $parentCols = [],
@@ -239,13 +240,14 @@ class Parser
 
         // Generate parent ID for arrays
         $arrayParentId = $this->getPrimaryKeyValue(
+            $rowNum,
             $dataRow,
             $type,
             $outerObjectHash
         );
 
         foreach (array_merge($this->getStruct()->getDefinitions($type), $parentCols) as $column => $dataType) {
-            $this->parseField($dataRow, $csvRow, $arrayParentId, $column, $dataType, $type);
+            $this->parseField($rowNum, $dataRow, $csvRow, $arrayParentId, $column, $dataType, $type);
         }
 
         return $csvRow;
@@ -262,6 +264,7 @@ class Parser
      * @return void
      */
     protected function parseField(
+        $rowNum,
         \stdClass $dataRow,
         CsvRow $csvRow,
         $arrayParentId,
@@ -318,7 +321,7 @@ class Parser
                 $this->parse($dataRow->{$column}, $type . "." . $column, $arrayParentId);
                 break;
             case "object":
-                $childRow = $this->parseRow($dataRow->{$column}, $type . "." . $column, [], $arrayParentId);
+                $childRow = $this->parseRow($rowNum, $dataRow->{$column}, $type . "." . $column, [], $arrayParentId);
 
                 foreach($childRow->getRow() as $key => $value) {
                     // FIXME createSafeName is duplicated here
@@ -405,35 +408,12 @@ class Parser
     }
 
     /**
-     * Validates a string for use as MySQL column/table name
+     * Removed safe name creation for now - just returns same value as passed
      *
-     * @param string $name A string to be validated
-     * @return string
-     * @todo Could use just a part of the md5 hash
      */
     protected function createSafeName($name)
     {
-        if (strlen($name) > 64) {
-            if (str_word_count($name) > 1 && preg_match_all('/\b(\w)/', $name, $m)) {
-                // Create an "acronym" from first letters
-                $short = implode('', $m[1]);
-            } else {
-                $short = md5($name);
-            }
-            $short .= "_";
-            $remaining = 64 - strlen($short);
-            $nextSpace = strpos($name, " ", (strlen($name)-$remaining))
-                ? : strpos($name, "_", (strlen($name)-$remaining));
-
-            $newName = $nextSpace === false
-                ? $short
-                : $short . substr($name, $nextSpace);
-        } else {
-            $newName = $name;
-        }
-
-        $newName = preg_replace('/[^A-Za-z0-9-]/', '_', $newName);
-        return trim($newName, "_");
+        return $name;
     }
 
     /**
@@ -471,7 +451,7 @@ class Parser
      * @param string $outerObjectHash
      * @return string
      */
-    protected function getPrimaryKeyValue(\stdClass $dataRow, $type, $outerObjectHash = null)
+    protected function getPrimaryKeyValue($rowNum, \stdClass $dataRow, $type, $outerObjectHash = null)
     {
         // Try to find a "real" parent ID
         if (!empty($this->primaryKeys[$this->createSafeName($type)])) {
@@ -495,7 +475,7 @@ class Parser
             return $type . "_" . join(";", $values);
         } else {
             // Of no pkey is specified to get the real ID, use a hash of the row
-            return $type . "_" . md5(serialize($dataRow) . $outerObjectHash);
+            return $type . "_" . sha1(serialize($dataRow) . $outerObjectHash) . "-".$rowNum;
         }
     }
 

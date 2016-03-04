@@ -1,5 +1,5 @@
 <?php
-namespace Keboola\Json\Exception;
+namespace FiveFortyCo\Json\Exception;
 
 class NoDataException extends JsonParserException
 {
