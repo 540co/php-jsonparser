@@ -51,7 +51,8 @@ class CsvRow
     }
 
     public function calculateRowId($prefix=null) {
-      $this->data['@ROWID'] = sha1($prefix.json_encode($this->data));
+      $this->data['@ROWID'] = $prefix.sha1(json_encode($this->data));
+      return $prefix.sha1(json_encode($this->data));
     }
 
     public function addRecordId($recordId) {

@@ -83,6 +83,9 @@ class Parser
      */
     protected $primaryKeys = [];
 
+    public $rowIdLookup = [];
+
+
     /**
      * @var Analyzer
      */
@@ -215,7 +218,14 @@ class Parser
             }
 
             $csvRow = $this->parseRow($recordId, $rowNum, $row, $type, $parentCols);
-            $csvRow->calculateRowId($rowNum);
+            if (is_numeric($rowNum)) {
+              $rowId = $csvRow->calculateRowId($recordId.'-'.$rowNum.'-');
+            } else {
+              $rowId = $csvRow->calculateRowId($recordId.'-');
+            }
+
+
+            $this->rowIdLookup[$type][] = $rowId;
             $csvRow->addRecordId($recordId);
 
             $csvFile->writeRow($csvRow->getRow());
@@ -470,6 +480,7 @@ class Parser
      */
     protected function getPrimaryKeyValue($rowNum, \stdClass $dataRow, $type, $outerObjectHash = null)
     {
+        /*
         // Try to find a "real" parent ID
         if (!empty($this->primaryKeys[$this->createSafeName($type)])) {
             $pk = $this->primaryKeys[$this->createSafeName($type)];
@@ -488,12 +499,15 @@ class Parser
                     $values[] = $dataRow->{$pKeyCol};
                 }
             }
-
-            return $type . "_" . join(";", $values);
+            return $type . "-" . join(";", $values);
         } else {
+        */
             // Of no pkey is specified to get the real ID, use a hash of the row
-            return $type . "_" . sha1(serialize($dataRow) . $outerObjectHash) . "-".$rowNum;
+            $primaryKey = $type . "-" . sha1(serialize($dataRow) . $outerObjectHash) . "-".$rowNum;
+            return $primaryKey;
+        /*
         }
+        */
     }
 
     /**
