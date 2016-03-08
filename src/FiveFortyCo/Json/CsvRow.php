@@ -9,7 +9,7 @@ class CsvRow
     /**
      * @var array
      */
-    protected $data = [];
+    public $data = [];
 
     public function __construct(array $columns)
     {
@@ -57,6 +57,23 @@ class CsvRow
 
     public function addRecordId($recordId) {
       $this->data['@RECORDID'] = $recordId;
+    }
+
+    public function addJsonChild($type) {
+      $this->data['@CHILD'] = $type;
+    }
+
+    public function addJsonParent($type) {
+      $this->data['@PARENT'] = $type;
+    }
+
+
+    public function addJsonParentColumn($col) {
+      $this->data['@PARENTCOLUMN'] = $col;
+    }
+
+    public function addParentRowId($rowId) {
+      $this->data['@PARENTROWID'] = $rowId;
     }
 
 }
