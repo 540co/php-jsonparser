@@ -197,7 +197,7 @@ class Parser
             $this->analyzer->analyze($data, $type);
         }
 
-        $parentId = $this->validateParentId($parentId);
+        $parentId = $this->validateParentId($parentId, $record);
 
         $csvFile = $this->createCsvFile($type, $parentId);
 
@@ -255,6 +255,7 @@ class Parser
 
         // Generate parent ID for arrays
         $arrayParentId = $this->getPrimaryKeyValue(
+            $recordId,
             $rowNum,
             $dataRow,
             $type,
@@ -478,7 +479,7 @@ class Parser
      * @param string $outerObjectHash
      * @return string
      */
-    protected function getPrimaryKeyValue($rowNum, \stdClass $dataRow, $type, $outerObjectHash = null)
+    protected function getPrimaryKeyValue($recordId, $rowNum, \stdClass $dataRow, $type, $outerObjectHash = null)
     {
         /*
         // Try to find a "real" parent ID
@@ -503,7 +504,7 @@ class Parser
         } else {
         */
             // Of no pkey is specified to get the real ID, use a hash of the row
-            $primaryKey = $type . "-" . sha1(serialize($dataRow) . $outerObjectHash) . "-".$rowNum;
+            $primaryKey = $type . "-" . $recordId . "-" . $rowNum. "-". sha1(serialize($dataRow) . $outerObjectHash);
             return $primaryKey;
         /*
         }
@@ -516,7 +517,7 @@ class Parser
      * @param string|array $parentId
      * @return array
      */
-    protected function validateParentId($parentId)
+    protected function validateParentId($parentId, $recordId)
     {
         if (!empty($parentId)) {
             if (is_array($parentId)) {
