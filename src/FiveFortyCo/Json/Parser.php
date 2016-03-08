@@ -213,6 +213,7 @@ class Parser
             }
 
             $csvRow = $this->parseRow($rowNum, $row, $type, $parentCols);
+            $csvRow->calculateRowId($rowNum);
 
             $csvFile->writeRow($csvRow->getRow());
         }
@@ -249,6 +250,8 @@ class Parser
         foreach (array_merge($this->getStruct()->getDefinitions($type), $parentCols) as $column => $dataType) {
             $this->parseField($rowNum, $dataRow, $csvRow, $arrayParentId, $column, $dataType, $type);
         }
+
+
 
         return $csvRow;
     }
@@ -319,6 +322,7 @@ class Parser
             case "array":
                 $csvRow->setValue($safeColumn, $arrayParentId);
                 $this->parse($dataRow->{$column}, $type . "." . $column, $arrayParentId);
+
                 break;
             case "object":
                 $childRow = $this->parseRow($rowNum, $dataRow->{$column}, $type . "." . $column, [], $arrayParentId);
@@ -327,6 +331,7 @@ class Parser
                     // FIXME createSafeName is duplicated here
                     $csvRow->setValue($this->createSafeName($safeColumn . '_' . $key), $value);
                 }
+
                 break;
             default:
                 // If a column is an object/array while $struct expects a single column, log an error
@@ -366,6 +371,7 @@ class Parser
                     // (here and in validateHeader again)
                     // Is used to trim multiple "_" in column name before appending
                     $header[] = $this->createSafeName($column) . "_" . $val;
+
                 }
             } else {
                 $header[] = $column;
@@ -376,13 +382,14 @@ class Parser
             if (is_array($parent)) {
                 $header = array_merge($header, array_keys($parent));
             } else {
-                $header[] = "JSON_parentId";
+                $header[] = "@JSONPARENTID";
             }
         }
 
         // TODO set $this->headerNames[$type] = array_combine($validatedHeader, $header);
         // & add a getHeaderNames fn()
-        return $this->validateHeader($header);
+        $headerToReturn = $this->validateHeader($header);
+        return $headerToReturn;
     }
 
     /**
@@ -425,11 +432,15 @@ class Parser
      */
     protected function createCsvFile($type, $parentId)
     {
+
         if (empty($this->headers[$type])) {
             $this->headers[$type] = $this->getHeader($type, $parentId);
         }
 
+        $this->headers[$type][] = "@ROWID";
+
         $safeType = $this->createSafeName($type);
+
         if (empty($this->csvFiles[$safeType])) {
             $this->csvFiles[$safeType] = Table::create(
                 $safeType,
@@ -498,7 +509,7 @@ class Parser
                     );
                 }
             } else {
-                $parentId = ['JSON_parentId' => $parentId];
+                $parentId = ['@JSONPARENTID' => $parentId];
             }
         } else {
             $parentId = [];

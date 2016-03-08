@@ -18,6 +18,7 @@ class CsvRow
 
     public function setValue($column, $value)
     {
+
         if (!array_key_exists($column, $this->data)) {
             throw new JsonParserException(
                 "Error assigning '{$value}' to a non-existing column '{$column}'!",
@@ -26,6 +27,7 @@ class CsvRow
                 ]
             );
         }
+        
 
         if (!is_scalar($value) && !is_null($value)) {
             throw new JsonParserException(
@@ -47,4 +49,9 @@ class CsvRow
     {
         return $this->data;
     }
+
+    public function calculateRowId($prefix=null) {
+      $this->data['@ROWID'] = sha1($prefix.json_encode($this->data));
+    }
+
 }
