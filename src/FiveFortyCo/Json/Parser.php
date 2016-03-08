@@ -136,6 +136,7 @@ class Parser
      */
     public function process(array $data, $type = "root", $parentId = null)
     {
+
         // The analyzer wouldn't set the $struct and parse fails!
         if ((empty($data) || $data == [null]) && !$this->struct->hasDefinitions($type)) {
             throw new NoDataException("Empty data set received for '{$type}'", [
@@ -171,8 +172,9 @@ class Parser
      * @return void
      * @see Parser::process()
      */
-    public function parse(array $data, $type, $parentId = null)
+    public function parse($recordId, array $data, $type, $parentId = null)
     {
+
         if (
             !$this->analyzer->isAnalyzed($type)
             && (empty($this->analyzer->getRowsAnalyzed()[$type])
@@ -212,8 +214,9 @@ class Parser
                 $row = (object) array_replace((array) $row, $parentId);
             }
 
-            $csvRow = $this->parseRow($rowNum, $row, $type, $parentCols);
+            $csvRow = $this->parseRow($recordId, $rowNum, $row, $type, $parentCols);
             $csvRow->calculateRowId($rowNum);
+            $csvRow->addRecordId($recordId);
 
             $csvFile->writeRow($csvRow->getRow());
         }
@@ -230,6 +233,7 @@ class Parser
      * @return CsvRow
      */
     protected function parseRow(
+        $recordId,
         $rowNum,
         \stdClass $dataRow,
         $type,
@@ -248,7 +252,7 @@ class Parser
         );
 
         foreach (array_merge($this->getStruct()->getDefinitions($type), $parentCols) as $column => $dataType) {
-            $this->parseField($rowNum, $dataRow, $csvRow, $arrayParentId, $column, $dataType, $type);
+            $this->parseField($recordId, $rowNum, $dataRow, $csvRow, $arrayParentId, $column, $dataType, $type);
         }
 
 
@@ -267,6 +271,7 @@ class Parser
      * @return void
      */
     protected function parseField(
+        $recordId,
         $rowNum,
         \stdClass $dataRow,
         CsvRow $csvRow,
@@ -321,11 +326,11 @@ class Parser
         switch ($dataType) {
             case "array":
                 $csvRow->setValue($safeColumn, $arrayParentId);
-                $this->parse($dataRow->{$column}, $type . "." . $column, $arrayParentId);
+                $this->parse($recordId, $dataRow->{$column}, $type . "." . $column, $arrayParentId);
 
                 break;
             case "object":
-                $childRow = $this->parseRow($rowNum, $dataRow->{$column}, $type . "." . $column, [], $arrayParentId);
+                $childRow = $this->parseRow($recordId, $rowNum, $dataRow->{$column}, $type . "." . $column, [], $arrayParentId);
 
                 foreach($childRow->getRow() as $key => $value) {
                     // FIXME createSafeName is duplicated here
@@ -438,6 +443,7 @@ class Parser
         }
 
         $this->headers[$type][] = "@ROWID";
+        $this->headers[$type][] = "@RECORDID";
 
         $safeType = $this->createSafeName($type);
 
@@ -547,9 +553,10 @@ class Parser
      */
     public function processCache()
     {
+
         if (!empty($this->cache)) {
             while ($batch = $this->cache->getNext()) {
-                $this->parse($batch["data"], $batch["type"], $batch["parentId"]);
+                $this->parse(key($batch["data"]),$batch["data"], $batch["type"], $batch["parentId"]);
             }
         }
     }

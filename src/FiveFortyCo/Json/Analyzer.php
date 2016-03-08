@@ -70,7 +70,9 @@ class Analyzer
             : ($this->rowsAnalyzed[$type] + count($data));
 
         $rowType = $this->getStruct()->getArrayType($type);
-        foreach($data as $row) {
+
+        foreach($data as $key=>$row) {
+
             $newType = $this->analyzeRow($row, $type);
             if (
                 !is_null($rowType)
@@ -82,6 +84,7 @@ class Analyzer
             }
             $rowType = $newType;
         }
+
         $this->analyzed = true;
 
         return $rowType;

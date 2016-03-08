@@ -27,7 +27,7 @@ class CsvRow
                 ]
             );
         }
-        
+
 
         if (!is_scalar($value) && !is_null($value)) {
             throw new JsonParserException(
@@ -52,6 +52,10 @@ class CsvRow
 
     public function calculateRowId($prefix=null) {
       $this->data['@ROWID'] = sha1($prefix.json_encode($this->data));
+    }
+
+    public function addRecordId($recordId) {
+      $this->data['@RECORDID'] = $recordId;
     }
 
 }
