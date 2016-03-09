@@ -13,24 +13,10 @@ $r['ffa9b89f42e0e059df93cd3e79f328e1f11b359f'] = json_decode(file_get_contents('
 
 $parser = \FiveFortyCo\Json\Parser::create(new \Monolog\Logger('json-parser'));
 $parser->process($r);
-$parser->getCsvTables();
+$csvTables = $parser->getCsvTables();
+//$csvTableDefinition = $parser->getCsvTableDefinition();
+//$csvTableStatus = $parser->getCsvTableStats();
 
-var_dump($parser->csvTables);
-
-die;
-foreach ($csvfiles as $fileIndex=>$file) {
-
-  $csvfile = $file->openFile('r');
-  $csvfile->setFlags(\SplFileObject::READ_CSV);
-
-  $attributes = $file->getAttributes();
-
-  echo "-----------\n";
-  var_dump($attributes);
-  echo "-----------\n";
-  foreach ($csvfile as $rownum=>$rowval) {
-      var_dump($rowval);
-  }
-
-
-}
+var_dump($csvTables);
+//var_dump($csvTableDefinition);
+//var_dump($csvTableStatus);

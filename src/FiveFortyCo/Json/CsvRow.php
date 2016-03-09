@@ -50,6 +50,10 @@ class CsvRow
         return $this->data;
     }
 
+    public function getColumns() {
+      return array_keys($this->row);
+    }
+
     public function calculateRowId($prefix=null) {
       $this->data['@ROWID'] = $prefix.sha1(json_encode($this->data));
       return $prefix.sha1(json_encode($this->data));

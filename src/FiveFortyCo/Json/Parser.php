@@ -67,8 +67,8 @@ class Parser
     /**
      * @var Table[]
      */
-    //protected $csvFiles = [];
-    public $csvTables = [];
+    protected $csvFiles = [];
+    protected $csvTables = [];
 
     /**
      * @var Cache
@@ -544,6 +544,27 @@ class Parser
         return $name;
     }
 
+
+
+    protected function createCsvFile($type, $parentId)
+    {
+      /*
+        $safeType = $this->createSafeName($type);
+        if (empty($this->csvFiles[$safeType])) {
+            $this->csvFiles[$safeType] = Table::create(
+                $safeType,
+                $this->headers[$type],
+                $this->getTemp()
+            );
+            $this->csvFiles[$safeType]->addAttributes(["fullDisplayName" => $type]);
+            if (!empty($this->primaryKeys[$safeType])) {
+                $this->csvFiles[$safeType]->setPrimaryKey($this->primaryKeys[$safeType]);
+            }
+        }
+        return $this->csvFiles[$safeType];
+        */
+    }
+
     /**
      * @todo Add a $file parameter to use instead of $type
      * to allow saving a single type to different files
@@ -656,9 +677,62 @@ class Parser
     {
         // parse what's in cache before returning results
         $this->processCache();
-
-        return $this->csvFiles;
+        ksort($this->csvTables);
+        return $this->csvTables;
     }
+
+    private function getValueType($val) {
+
+      if (is_numeric($val)) {
+        return "number";
+      }
+
+      if (is_null($val)) {
+        return "null";
+      }
+
+      return "string";
+    }
+
+    public function getCsvTableDefinition() {
+      $tables = [];
+
+      foreach ($this->csvTables as $table=>$csvRows) {
+        $tables[$table] = array();
+        foreach ($csvRows as $rowNum=>$row) {
+          $types = [];
+          foreach ($row->getRow() as $column=>$val) {
+
+            if ($val !== null) {
+              $type = $this->getValueType($val);
+            }
+
+            $tables[$table][$column][] = $type;
+            $tables[$table][$column] = array_values(array_unique($tables[$table][$column]));
+
+          }
+
+        }
+
+      }
+
+      ksort($tables);
+      return $tables;
+    }
+
+    public function getCsvTableStats() {
+      $stats = [];
+
+      foreach ($this->csvTables as $table=>$csvRows) {
+        $stats[$table]['column_count'] = count($csvRows[0]->getRow());
+        $stats[$table]['row_count'] = count($csvRows);
+
+      }
+
+      ksort($stats);
+      return $stats;
+    }
+
 
     /**
      * @return Cache
