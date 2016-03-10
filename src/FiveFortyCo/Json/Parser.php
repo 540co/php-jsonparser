@@ -1,12 +1,11 @@
 <?php
 
-namespace Keboola\Json;
-
+namespace FiveFortyCo\Json;
 use Keboola\CsvTable\Table;
 use Keboola\Temp\Temp;
 use Monolog\Logger;
-use Keboola\Json\Exception\JsonParserException,
-    Keboola\Json\Exception\NoDataException;
+use FiveFortyCo\Json\Exception\JsonParserException,
+    FiveFortyCo\Json\Exception\NoDataException;
 
 /**
  * JSON to CSV data analyzer and parser/converter
@@ -48,6 +47,12 @@ use Keboola\Json\Exception\JsonParserException,
  */
 class Parser
 {
+
+    public $tableLookup = [];
+    public $tableLookup2 = [];
+    public $pkLookup = [];
+    public $pkRowLookup = [];
+
     /**
      * Column name for an array of scalars
      */
@@ -63,6 +68,7 @@ class Parser
      * @var Table[]
      */
     protected $csvFiles = [];
+    protected $csvTables = [];
 
     /**
      * @var Cache
@@ -83,6 +89,9 @@ class Parser
      * @var array
      */
     protected $primaryKeys = [];
+
+    public $rowIdLookup = [];
+
 
     /**
      * @var Analyzer
@@ -137,6 +146,7 @@ class Parser
      */
     public function process(array $data, $type = "root", $parentId = null)
     {
+
         // The analyzer wouldn't set the $struct and parse fails!
         if ((empty($data) || $data == [null]) && !$this->struct->hasDefinitions($type)) {
             throw new NoDataException("Empty data set received for '{$type}'", [
@@ -161,6 +171,8 @@ class Parser
             "type" => $type,
             "parentId" => $parentId
         ]);
+
+
     }
 
     /**
@@ -172,8 +184,9 @@ class Parser
      * @return void
      * @see Parser::process()
      */
-    public function parse(array $data, $type, $parentId = null)
+    public function parse($recordId, array $data, $type, $parentId = null)
     {
+
         if (
             !$this->analyzer->isAnalyzed($type)
             && (empty($this->analyzer->getRowsAnalyzed()[$type])
@@ -193,13 +206,13 @@ class Parser
             $this->analyzer->analyze($data, $type);
         }
 
-        $parentId = $this->validateParentId($parentId);
+        $parentId = $this->validateParentId($parentId, $record);
 
-        $csvFile = $this->createCsvFile($type, $parentId);
+        $csvTable = $this->createCsvTable($type, $parentId);
 
         $parentCols = array_fill_keys(array_keys($parentId), "string");
 
-        foreach ($data as $row) {
+        foreach ($data as $rowNum=>$row) {
             // in case of non-associative array of strings
             // prepare {"data": $value} objects for each row
             if (is_scalar($row) || is_null($row)) {
@@ -208,15 +221,118 @@ class Parser
                 $row = (object) [self::DATA_COLUMN => json_encode($row)];
             }
 
+
             // Add parentId to each row
             if (!empty($parentId)) {
                 $row = (object) array_replace((array) $row, $parentId);
             }
 
-            $csvRow = $this->parseRow($row, $type, $parentCols);
+            $csvRow = $this->parseRow($recordId, $rowNum, $row, $type, $parentCols);
 
-            $csvFile->writeRow($csvRow->getRow());
+            if (is_numeric($rowNum)) {
+              $rowId = $csvRow->calculateRowId($recordId.'-'.$rowNum.'-');
+            } else {
+              $rowId = $csvRow->calculateRowId($recordId.'-');
+            }
+
+            $csvRow->addRecordId($recordId);
+
+            if (!isset($this->csvTables[$type])) {
+              $this->csvTables[$type] = [];
+              $this->csvTables[$type][] = $csvRow;
+            } else {
+              $this->csvTables[$type][] = $csvRow;
+            }
+
+
+
         }
+
+
+
+
+
+        /*
+
+        if (isset($csvRow->data["@JSONPARENTID"])) {
+          var_dump($this->pkLookup[$csvRow->data["@JSONPARENTID"]]);
+          var_dump($type);
+          die;
+          $csvRow->addJsonParent($this->pkLookup[$csvRow->data["@JSONPARENTID"]][$type]);
+        }
+
+
+        $csvFile->writeRow($csvRow->getRow());
+        foreach ($csvRows as $type=>$csvRow) {
+          foreach ($csvRow as $rowNum=>$row) {
+
+            if (isset($row['@JSONPARENTID'])) {
+              if (isset($this->tableLookup[$row['@JSONPARENTID']])) {
+                $csvRows[$type][$rowNum]['@JSONPARENT'] = $this->tableLookup[$row['@JSONPARENTID']];
+              } else {
+                $csvRows[$type][$rowNum]['@JSONPARENT'] = "UNKNOWN";
+              }
+            }
+          }
+
+
+        }
+
+        var_dump($csvRows);
+        sleep(1);
+        */
+
+
+
+        /*
+
+        */
+    }
+
+    public function postParse() {
+
+      //var_dump($this->pkLookup);
+
+
+
+      foreach ($this->csvTables as $type=>$csvRows) {
+        foreach ($csvRows as $rowNum=>$csvRow) {
+          $colVals = $csvRow->getRow();
+          $recordId = $colVals['@RECORDID'];
+          $rowId = $colVals['@ROWID'];
+
+          $recordPrimaryKeys = array_keys($this->pkLookup[$recordId]);
+
+          foreach ($colVals as $col=>$val) {
+            if (in_array($val,$recordPrimaryKeys) && $col !== "@JSONPARENTID") {
+              $this->csvTables[$type][$rowNum]->addJsonChild($type.".".str_replace("_",".",$col));
+              //$this->pkRowLookup[$recordId][$val][$this->pkLookup[$recordId][$val]][$rowNum] = $rowId;
+              //$this->pkRowLookup[$recordId][$val][$type][$rowNum][$col] = $rowId;
+              $this->pkRowLookup[$recordId][$val][$type.".".str_replace("_",".",$col)]['parent_rowid'] = $rowId;
+              $this->pkRowLookup[$recordId][$val][$type.".".str_replace("_",".",$col)]['parent_join_column'] = $col;
+              $this->pkRowLookup[$recordId][$val][$type.".".str_replace("_",".",$col)]['parent_table'] = $type;
+            }
+          }
+
+        }
+
+      }
+
+      foreach ($this->csvTables as $type=>$csvRows) {
+        foreach ($csvRows as $rowNum=>$csvRow) {
+          $colVals = $csvRow->getRow();
+          $recordId = $colVals['@RECORDID'];
+          $rowId = $colVals['@ROWID'];
+
+          if (isset($colVals['@JSONPARENTID'])) {
+            $this->csvTables[$type][$rowNum]->addJsonParent($this->pkRowLookup[$recordId][$colVals['@JSONPARENTID']][$type]['parent_table']);
+            $this->csvTables[$type][$rowNum]->addJsonParentColumn($this->pkRowLookup[$recordId][$colVals['@JSONPARENTID']][$type]['parent_join_column']);
+            $this->csvTables[$type][$rowNum]->addParentRowId($this->pkRowLookup[$recordId][$colVals['@JSONPARENTID']][$type]['parent_rowid']);
+          }
+
+        }
+      }
+
     }
 
     /**
@@ -230,6 +346,8 @@ class Parser
      * @return CsvRow
      */
     protected function parseRow(
+        $recordId,
+        $rowNum,
         \stdClass $dataRow,
         $type,
         array $parentCols = [],
@@ -240,13 +358,15 @@ class Parser
 
         // Generate parent ID for arrays
         $arrayParentId = $this->getPrimaryKeyValue(
+            $recordId,
+            $rowNum,
             $dataRow,
             $type,
             $outerObjectHash
         );
 
         foreach (array_merge($this->getStruct()->getDefinitions($type), $parentCols) as $column => $dataType) {
-            $this->parseField($dataRow, $csvRow, $arrayParentId, $column, $dataType, $type);
+            $this->parseField($recordId, $rowNum, $dataRow, $csvRow, $arrayParentId, $column, $dataType, $type);
         }
 
         return $csvRow;
@@ -263,6 +383,8 @@ class Parser
      * @return void
      */
     protected function parseField(
+        $recordId,
+        $rowNum,
         \stdClass $dataRow,
         CsvRow $csvRow,
         $arrayParentId,
@@ -270,6 +392,7 @@ class Parser
         $dataType,
         $type
     ) {
+
         // TODO safeColumn should be associated with $this->struct[$type]
         // (and parentCols -> create in parse() where the arr is created)
         // Actually, the csvRow should REALLY have a pointer to the real name (not validated),
@@ -315,16 +438,20 @@ class Parser
 
         switch ($dataType) {
             case "array":
+
                 $csvRow->setValue($safeColumn, $arrayParentId);
-                $this->parse($dataRow->{$column}, $type . "." . $column, $arrayParentId);
+                $this->parse($recordId, $dataRow->{$column}, $type . "." . $column, $arrayParentId);
+
                 break;
             case "object":
-                $childRow = $this->parseRow($dataRow->{$column}, $type . "." . $column, [], $arrayParentId);
+                $childRow = $this->parseRow($recordId, $rowNum, $dataRow->{$column}, $type . "." . $column, [], $arrayParentId);
 
                 foreach($childRow->getRow() as $key => $value) {
                     // FIXME createSafeName is duplicated here
+
                     $csvRow->setValue($this->createSafeName($safeColumn . '_' . $key), $value);
                 }
+
                 break;
             default:
                 // If a column is an object/array while $struct expects a single column, log an error
@@ -364,6 +491,7 @@ class Parser
                     // (here and in validateHeader again)
                     // Is used to trim multiple "_" in column name before appending
                     $header[] = $this->createSafeName($column) . "_" . $val;
+
                 }
             } else {
                 $header[] = $column;
@@ -374,13 +502,15 @@ class Parser
             if (is_array($parent)) {
                 $header = array_merge($header, array_keys($parent));
             } else {
-                $header[] = "JSON_parentId";
+                $header[] = "@JSONPARENTID";
             }
         }
 
         // TODO set $this->headerNames[$type] = array_combine($validatedHeader, $header);
         // & add a getHeaderNames fn()
-        return $this->validateHeader($header);
+        $headerToReturn = $this->validateHeader($header);
+
+        return $headerToReturn;
     }
 
     /**
@@ -406,35 +536,33 @@ class Parser
     }
 
     /**
-     * Validates a string for use as MySQL column/table name
+     * Removed safe name creation for now - just returns same value as passed
      *
-     * @param string $name A string to be validated
-     * @return string
-     * @todo Could use just a part of the md5 hash
      */
     protected function createSafeName($name)
     {
-        if (strlen($name) > 64) {
-            if (str_word_count($name) > 1 && preg_match_all('/\b(\w)/', $name, $m)) {
-                // Create an "acronym" from first letters
-                $short = implode('', $m[1]);
-            } else {
-                $short = md5($name);
+        return $name;
+    }
+
+
+
+    protected function createCsvFile($type, $parentId)
+    {
+      /*
+        $safeType = $this->createSafeName($type);
+        if (empty($this->csvFiles[$safeType])) {
+            $this->csvFiles[$safeType] = Table::create(
+                $safeType,
+                $this->headers[$type],
+                $this->getTemp()
+            );
+            $this->csvFiles[$safeType]->addAttributes(["fullDisplayName" => $type]);
+            if (!empty($this->primaryKeys[$safeType])) {
+                $this->csvFiles[$safeType]->setPrimaryKey($this->primaryKeys[$safeType]);
             }
-            $short .= "_";
-            $remaining = 64 - strlen($short);
-            $nextSpace = strpos($name, " ", (strlen($name)-$remaining))
-                ? : strpos($name, "_", (strlen($name)-$remaining));
-
-            $newName = $nextSpace === false
-                ? $short
-                : $short . substr($name, $nextSpace);
-        } else {
-            $newName = $name;
         }
-
-        $newName = preg_replace('/[^A-Za-z0-9-]/', '_', $newName);
-        return trim($newName, "_");
+        return $this->csvFiles[$safeType];
+        */
     }
 
     /**
@@ -444,13 +572,18 @@ class Parser
      * @param string $type
      * @return Table
      */
-    protected function createCsvFile($type, $parentId)
+    protected function createCsvTable($type, $parentId)
     {
+
         if (empty($this->headers[$type])) {
             $this->headers[$type] = $this->getHeader($type, $parentId);
         }
 
+        $this->headers[$type][] = "@ROWID";
+        $this->headers[$type][] = "@RECORDID";
+
         $safeType = $this->createSafeName($type);
+
         if (empty($this->csvFiles[$safeType])) {
             $this->csvFiles[$safeType] = Table::create(
                 $safeType,
@@ -472,8 +605,10 @@ class Parser
      * @param string $outerObjectHash
      * @return string
      */
-    protected function getPrimaryKeyValue(\stdClass $dataRow, $type, $outerObjectHash = null)
+    protected function getPrimaryKeyValue($recordId, $rowNum, \stdClass $dataRow, $type, $outerObjectHash = null)
     {
+
+        /*
         // Try to find a "real" parent ID
         if (!empty($this->primaryKeys[$this->createSafeName($type)])) {
             $pk = $this->primaryKeys[$this->createSafeName($type)];
@@ -492,12 +627,18 @@ class Parser
                     $values[] = $dataRow->{$pKeyCol};
                 }
             }
-
-            return $type . "_" . join(";", $values);
+            return $type . "-" . join(";", $values);
         } else {
+        */
             // Of no pkey is specified to get the real ID, use a hash of the row
-            return $type . "_" . md5(serialize($dataRow) . $outerObjectHash);
+            $primaryKey = $type . "-" . $recordId . "-" . $rowNum. "-". sha1(serialize($dataRow) . $outerObjectHash);
+
+            $this->pkLookup[$recordId][$primaryKey] = $type;
+
+            return $primaryKey;
+        /*
         }
+        */
     }
 
     /**
@@ -506,7 +647,7 @@ class Parser
      * @param string|array $parentId
      * @return array
      */
-    protected function validateParentId($parentId)
+    protected function validateParentId($parentId, $recordId)
     {
         if (!empty($parentId)) {
             if (is_array($parentId)) {
@@ -519,7 +660,7 @@ class Parser
                     );
                 }
             } else {
-                $parentId = ['JSON_parentId' => $parentId];
+                $parentId = ['@JSONPARENTID' => $parentId];
             }
         } else {
             $parentId = [];
@@ -532,13 +673,66 @@ class Parser
      * Returns an array of CSV files containing results
      * @return Table[]
      */
-    public function getCsvFiles()
+    public function getCsvTables()
     {
         // parse what's in cache before returning results
         $this->processCache();
-
-        return $this->csvFiles;
+        ksort($this->csvTables);
+        return $this->csvTables;
     }
+
+    private function getValueType($val) {
+
+      if (is_numeric($val)) {
+        return "number";
+      }
+
+      if (is_null($val)) {
+        return "null";
+      }
+
+      return "string";
+    }
+
+    public function getCsvTableDefinition() {
+      $tables = [];
+
+      foreach ($this->csvTables as $table=>$csvRows) {
+        $tables[$table] = array();
+        foreach ($csvRows as $rowNum=>$row) {
+          $types = [];
+          foreach ($row->getRow() as $column=>$val) {
+
+            if ($val !== null) {
+              $type = $this->getValueType($val);
+            }
+
+            $tables[$table][$column][] = $type;
+            $tables[$table][$column] = array_values(array_unique($tables[$table][$column]));
+
+          }
+
+        }
+
+      }
+
+      ksort($tables);
+      return $tables;
+    }
+
+    public function getCsvTableStats() {
+      $stats = [];
+
+      foreach ($this->csvTables as $table=>$csvRows) {
+        $stats[$table]['column_count'] = count($csvRows[0]->getRow());
+        $stats[$table]['row_count'] = count($csvRows);
+
+      }
+
+      ksort($stats);
+      return $stats;
+    }
+
 
     /**
      * @return Cache
@@ -557,11 +751,14 @@ class Parser
      */
     public function processCache()
     {
+
         if (!empty($this->cache)) {
             while ($batch = $this->cache->getNext()) {
-                $this->parse($batch["data"], $batch["type"], $batch["parentId"]);
+                $this->parse(key($batch["data"]),$batch["data"], $batch["type"], $batch["parentId"]);
             }
         }
+
+        $this->postParse();
     }
 
     /**

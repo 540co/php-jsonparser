@@ -1,15 +1,15 @@
 <?php
 
-namespace Keboola\Json;
+namespace FiveFortyCo\Json;
 
-use Keboola\Json\Exception\JsonParserException;
+use FiveFortyCo\Json\Exception\JsonParserException;
 
 class CsvRow
 {
     /**
      * @var array
      */
-    protected $data = [];
+    public $data = [];
 
     public function __construct(array $columns)
     {
@@ -18,6 +18,7 @@ class CsvRow
 
     public function setValue($column, $value)
     {
+
         if (!array_key_exists($column, $this->data)) {
             throw new JsonParserException(
                 "Error assigning '{$value}' to a non-existing column '{$column}'!",
@@ -26,6 +27,7 @@ class CsvRow
                 ]
             );
         }
+
 
         if (!is_scalar($value) && !is_null($value)) {
             throw new JsonParserException(
@@ -47,4 +49,35 @@ class CsvRow
     {
         return $this->data;
     }
+
+    public function getColumns() {
+      return array_keys($this->row);
+    }
+
+    public function calculateRowId($prefix=null) {
+      $this->data['@ROWID'] = $prefix.sha1(json_encode($this->data));
+      return $prefix.sha1(json_encode($this->data));
+    }
+
+    public function addRecordId($recordId) {
+      $this->data['@RECORDID'] = $recordId;
+    }
+
+    public function addJsonChild($type) {
+      $this->data['@CHILD'] = $type;
+    }
+
+    public function addJsonParent($type) {
+      $this->data['@PARENT'] = $type;
+    }
+
+
+    public function addJsonParentColumn($col) {
+      $this->data['@PARENTCOLUMN'] = $col;
+    }
+
+    public function addParentRowId($rowId) {
+      $this->data['@PARENTROWID'] = $rowId;
+    }
+
 }

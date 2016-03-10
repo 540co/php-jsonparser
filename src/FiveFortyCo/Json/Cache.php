@@ -1,6 +1,6 @@
 <?php
 
-namespace Keboola\Json;
+namespace FiveFortyCo\Json;
 
 use Keboola\Utils\Utils;
 

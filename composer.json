@@ -1,6 +1,6 @@
 {
-    "name": "keboola/json-parser",
-    "description": "Keboola JSON to CSV parser",
+    "name": "540co/json-parser",
+    "description": "JSON to CSV parser",
     "license": "MIT",
 	"keywords": ["json", "csv", "parser", "converter", "json2csv"],
     "authors": [
@@ -21,8 +21,8 @@
 		"codeclimate/php-test-reporter": "dev-master"
 	},
 	"autoload": {
-		"psr-0": {
-			"Keboola\\Json": "src/"
+		"psr-4": {
+			"FiveFortyCo\\Json\\": "src/FiveFortyCo/json"
 		}
 	}
 }
