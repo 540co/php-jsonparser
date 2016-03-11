@@ -292,9 +292,8 @@ class Parser
             $this->csvTables[$type][$rowNum]->addJsonParent($this->pkRowLookup[$recordId][$colVals['@JSONPARENTID']][$type]['parent_table']);
             //$this->csvTables[$type][$rowNum]->addJsonParentColumn($this->pkRowLookup[$recordId][$colVals['@JSONPARENTID']][$type]['parent_join_column']);
             $this->csvTables[$type][$rowNum]->addParentRowId($this->pkRowLookup[$recordId][$colVals['@JSONPARENTID']][$type]['parent_rowid']);
-            unset($this->csvTables[$type][$rowNum]->{'@JSONPARENTID'});
+            $this->csvTables[$type][$rowNum]->removeJsonParentId();
           }
-
 
         }
       }
