@@ -22,7 +22,7 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"FiveFortyCo\\Json\\": "src/FiveFortyCo/json"
+			"FiveFortyCo\\Json\\": "src/FiveFortyCo/Json"
 		}
 	}
 }
