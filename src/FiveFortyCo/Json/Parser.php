@@ -206,13 +206,20 @@ class Parser
             $this->analyzer->analyze($data, $type);
         }
 
-        $parentId = $this->validateParentId($parentId, $record);
+        $parentId = $this->validateParentId($parentId, $recordId);
 
         $csvTable = $this->createCsvTable($type, $parentId);
 
         $parentCols = array_fill_keys(array_keys($parentId), "string");
 
         foreach ($data as $rowNum=>$row) {
+
+            // This is to get the recordid when in root table (not sure I like how this is being checked)
+            if ($type == "root") {
+              $recordId = $rowNum;
+            }
+
+
             // in case of non-associative array of strings
             // prepare {"data": $value} objects for each row
             if (is_scalar($row) || is_null($row)) {
@@ -293,7 +300,8 @@ class Parser
 
       //var_dump($this->pkLookup);
 
-
+      var_dump($this->csvTables);
+      die;
 
       foreach ($this->csvTables as $type=>$csvRows) {
         foreach ($csvRows as $rowNum=>$csvRow) {
@@ -353,6 +361,7 @@ class Parser
         array $parentCols = [],
         $outerObjectHash = null
     ) {
+    
         // move back out to parse/switch if it causes issues
         $csvRow = new CsvRow($this->getHeader($type, $parentCols));
 
@@ -754,7 +763,7 @@ class Parser
 
         if (!empty($this->cache)) {
             while ($batch = $this->cache->getNext()) {
-                $this->parse(key($batch["data"]),$batch["data"], $batch["type"], $batch["parentId"]);
+                $this->parse(null, $batch["data"], $batch["type"], $batch["parentId"]);
             }
         }
 
