@@ -255,53 +255,9 @@ class Parser
 
         }
 
-
-
-
-
-        /*
-
-        if (isset($csvRow->data["@JSONPARENTID"])) {
-          var_dump($this->pkLookup[$csvRow->data["@JSONPARENTID"]]);
-          var_dump($type);
-          die;
-          $csvRow->addJsonParent($this->pkLookup[$csvRow->data["@JSONPARENTID"]][$type]);
-        }
-
-
-        $csvFile->writeRow($csvRow->getRow());
-        foreach ($csvRows as $type=>$csvRow) {
-          foreach ($csvRow as $rowNum=>$row) {
-
-            if (isset($row['@JSONPARENTID'])) {
-              if (isset($this->tableLookup[$row['@JSONPARENTID']])) {
-                $csvRows[$type][$rowNum]['@JSONPARENT'] = $this->tableLookup[$row['@JSONPARENTID']];
-              } else {
-                $csvRows[$type][$rowNum]['@JSONPARENT'] = "UNKNOWN";
-              }
-            }
-          }
-
-
-        }
-
-        var_dump($csvRows);
-        sleep(1);
-        */
-
-
-
-        /*
-
-        */
     }
 
     public function postParse() {
-
-      //var_dump($this->pkLookup);
-
-      var_dump($this->csvTables);
-      die;
 
       foreach ($this->csvTables as $type=>$csvRows) {
         foreach ($csvRows as $rowNum=>$csvRow) {
@@ -361,7 +317,7 @@ class Parser
         array $parentCols = [],
         $outerObjectHash = null
     ) {
-    
+
         // move back out to parse/switch if it causes issues
         $csvRow = new CsvRow($this->getHeader($type, $parentCols));
 
