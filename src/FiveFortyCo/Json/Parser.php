@@ -269,7 +269,7 @@ class Parser
 
           foreach ($colVals as $col=>$val) {
             if (in_array($val,$recordPrimaryKeys) && $col !== "@JSONPARENTID") {
-              $this->csvTables[$type][$rowNum]->addJsonChild($type.".".str_replace("_",".",$col));
+              //$this->csvTables[$type][$rowNum]->addJsonChild($type.".".str_replace("_",".",$col));
               //$this->pkRowLookup[$recordId][$val][$this->pkLookup[$recordId][$val]][$rowNum] = $rowId;
               //$this->pkRowLookup[$recordId][$val][$type][$rowNum][$col] = $rowId;
               $this->pkRowLookup[$recordId][$val][$type.".".str_replace("_",".",$col)]['parent_rowid'] = $rowId;
