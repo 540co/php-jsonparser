@@ -71,13 +71,16 @@ class CsvRow
       $this->data['@PARENT'] = $type;
     }
 
-
     public function addJsonParentColumn($col) {
       $this->data['@PARENTCOLUMN'] = $col;
     }
 
     public function addParentRowId($rowId) {
       $this->data['@PARENTROWID'] = $rowId;
+    }
+
+    public function removeJsonParentId() {
+      unset($this->data['@JSONPARENTID']);
     }
 
 }
