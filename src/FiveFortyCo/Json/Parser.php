@@ -660,12 +660,16 @@ class Parser
       return "string";
     }
 
-    public function getCsvTableDefinition() {
+    public function getCsvTableDetails() {
       $tables = [];
 
       foreach ($this->csvTables as $table=>$csvRows) {
         $tables[$table] = array();
         foreach ($csvRows as $rowNum=>$row) {
+
+          $tables[$table]['column_count'] = count($csvRows[0]->getRow());
+          $tables[$table]['row_count'] = count($csvRows);
+
           $types = [];
           foreach ($row->getRow() as $column=>$val) {
 
@@ -673,9 +677,8 @@ class Parser
               $type = $this->getValueType($val);
             }
 
-            $tables[$table][$column][] = $type;
-            $tables[$table][$column] = array_values(array_unique($tables[$table][$column]));
-
+            $tables[$table]['column'][$column]['datatype'] = $type;
+        
           }
 
         }
@@ -685,20 +688,6 @@ class Parser
       ksort($tables);
       return $tables;
     }
-
-    public function getCsvTableStats() {
-      $stats = [];
-
-      foreach ($this->csvTables as $table=>$csvRows) {
-        $stats[$table]['column_count'] = count($csvRows[0]->getRow());
-        $stats[$table]['row_count'] = count($csvRows);
-
-      }
-
-      ksort($stats);
-      return $stats;
-    }
-
 
     /**
      * @return Cache

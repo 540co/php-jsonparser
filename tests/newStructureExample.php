@@ -16,9 +16,7 @@ $r['ffa9b89f42e0e059df93cd3e79f328e1f11b359f'] = json_decode(file_get_contents('
 $parser = \FiveFortyCo\Json\Parser::create(new \Monolog\Logger('json-parser'));
 $parser->process($r);
 $csvTables = $parser->getCsvTables();
-//$csvTableDefinition = $parser->getCsvTableDefinition();
-//$csvTableStatus = $parser->getCsvTableStats();
+$csvTableDetails = $parser->getCsvTableDetails();
 
-var_dump($csvTables);
-//var_dump($csvTableDefinition);
-//var_dump($csvTableStatus);
+//var_dump($csvTables);
+var_dump($csvTableDetails);
