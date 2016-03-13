@@ -677,8 +677,7 @@ class Parser
             if ($val !== null) {
               $type = $this->getValueType($val);
             }
-            echo $column.'=>'.$val."\n";
-
+        
             //sleep(1);
             if ($column == "@ROWID") {
               $primaryKey = TRUE;
