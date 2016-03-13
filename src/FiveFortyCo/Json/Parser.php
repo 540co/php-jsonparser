@@ -665,6 +665,7 @@ class Parser
 
       foreach ($this->csvTables as $table=>$csvRows) {
         $tables[$table] = array();
+
         foreach ($csvRows as $rowNum=>$row) {
 
           $tables[$table]['column_count'] = count($csvRows[0]->getRow());
@@ -676,10 +677,31 @@ class Parser
             if ($val !== null) {
               $type = $this->getValueType($val);
             }
+            echo $column.'=>'.$val."\n";
+
+            //sleep(1);
+            if ($column == "@ROWID") {
+              $primaryKey = TRUE;
+            } else {
+              $primaryKey = FALSE;
+            }
+
+            if ($column == "@PARENT") {
+
+              $tables[$table]['relationships'][$val]['from'] = array('table'=>$table, 'column'=>'@PARENTROWID');
+              $tables[$table]['relationships'][$val]['to'] = array('table'=>$val, 'column'=>'@ROWID');
+
+              $tables[$table]['relationships']['@RECORDID']['from'] = array('table'=>$table, 'column'=>'@RECORDID');
+              $tables[$table]['relationships']['@RECORDID']['to'] = array('table'=>'root', 'column'=>'@RECORDID');
+
+            }
 
             $tables[$table]['column'][$column]['datatype'] = $type;
-        
+            $tables[$table]['column'][$column]['primarykey'] = $primaryKey;
+
           }
+
+
 
         }
 
