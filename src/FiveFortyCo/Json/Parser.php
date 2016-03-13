@@ -677,8 +677,13 @@ class Parser
             if ($val !== null) {
               $type = $this->getValueType($val);
             }
-        
-            //sleep(1);
+
+            if ($column == "@RECORDID" && $table == 'root') {
+              $unique = TRUE;
+            } else {
+              $unique = FALSE;
+            }
+
             if ($column == "@ROWID") {
               $primaryKey = TRUE;
             } else {
@@ -697,7 +702,7 @@ class Parser
 
             $tables[$table]['column'][$column]['datatype'] = $type;
             $tables[$table]['column'][$column]['primarykey'] = $primaryKey;
-
+            $tables[$table]['column'][$column]['unique'] = $unique;
           }
 
 
