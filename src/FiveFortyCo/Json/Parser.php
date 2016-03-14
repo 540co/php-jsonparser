@@ -685,7 +685,7 @@ class Parser
           $tables[$table]['column'][$column]['primarykey'] = $primaryKey;
 
           $tables[$table]['column'][$column]['unique'] = $unique;
-          $tables[$table]['column'][$column]['datatype'] = "string";
+
 
 
 
@@ -703,12 +703,11 @@ class Parser
 
         foreach ($csvRows as $rowNum=>$row) {
           foreach ($row->getRow() as $column=>$val) {
-            $tables[$table]['value_analysis'][$column] = array();
-            $tables[$table]['value_analysis'][$column]['minmax_length'] = $this->analyzeMinMaxLengthVals($vals[$column]);
-            $tables[$table]['value_analysis'][$column]['isNumericOrNull_percent'] = $this->analyzeNumericVals($vals[$column]);
-            $tables[$table]['value_analysis'][$column]['isBoolOrNull_percent'] = $this->analyzeBooleanVals($vals[$column]);
-            $tables[$table]['value_analysis'][$column]['isNull_percent'] = $this->analyzeBooleanVals($vals[$column]);
-            $tables[$table]['value_analysis'][$column]['isDate_percent'] = $this->analyzeDateVals($vals[$column]);
+            $tables[$table]['column'][$column]['value_analysis']['minmax_length'] = $this->analyzeMinMaxLengthVals($vals[$column]);
+            $tables[$table]['column'][$column]['value_analysis']['isNumericOrNull_percent'] = $this->analyzeNumericVals($vals[$column]);
+            $tables[$table]['column'][$column]['value_analysis']['isBoolOrNull_percent'] = $this->analyzeBooleanVals($vals[$column]);
+            $tables[$table]['column'][$column]['value_analysis']['isNull_percent'] = $this->analyzeBooleanVals($vals[$column]);
+            $tables[$table]['column'][$column]['value_analysis']['isDate_percent'] = $this->analyzeDateVals($vals[$column]);
             //$tables[$table]['value_analysis'][$column]['vals'] = $vals[$column];
           }
         }
