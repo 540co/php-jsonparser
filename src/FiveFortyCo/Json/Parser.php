@@ -708,17 +708,23 @@ class Parser
 
           }
 
-          $allNumeric = true;
-          foreach ($tables[$table]['column'][$column]['vals'] as $v) {
-            if (!is_numeric($v)) {
-              $allNumeric = false;
-            }
-          }
+          foreach ($row->getRow() as $column=>$val) {
 
-          if ($allNumeric == true) {
-            $tables[$table]['column'][$column]['datatype'] = "number";
-          } else {
-            $tables[$table]['column'][$column]['datatype'] = "string";
+            $allNumeric = true;
+            foreach ($tables[$table]['column'][$column]['vals'] as $v) {
+              if (!is_numeric($v)) {
+                $allNumeric = false;
+              }
+            }
+
+            if ($allNumeric == true) {
+              $tables[$table]['column'][$column]['datatype'] = "number";
+            } else {
+              $tables[$table]['column'][$column]['datatype'] = "string";
+            }
+
+            unset($tables[$table]['column'][$column]['vals']);
+
           }
 
 
