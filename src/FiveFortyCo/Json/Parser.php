@@ -705,9 +705,10 @@ class Parser
             $tables[$table]['column'][$column]['primarykey'] = $primaryKey;
             $tables[$table]['column'][$column]['vals'][] = $val;
             $tables[$table]['column'][$column]['unique'] = $unique;
+            $tables[$table]['column'][$column]['datatype'] = "string";
 
           }
-
+          /*
           foreach ($row->getRow() as $column=>$val) {
 
             $allNumeric = true;
@@ -726,6 +727,7 @@ class Parser
             unset($tables[$table]['column'][$column]['vals']);
 
           }
+          */
 
 
         }
