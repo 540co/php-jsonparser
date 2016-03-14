@@ -709,7 +709,7 @@ class Parser
             $tables[$table]['value_analysis'][$column]['isBoolOrNull_percent'] = $this->analyzeBooleanVals($vals[$column]);
             $tables[$table]['value_analysis'][$column]['isNull_percent'] = $this->analyzeBooleanVals($vals[$column]);
             $tables[$table]['value_analysis'][$column]['isDate_percent'] = $this->analyzeDateVals($vals[$column]);
-            $tables[$table]['value_analysis'][$column]['vals'] = $vals[$column];
+            //$tables[$table]['value_analysis'][$column]['vals'] = $vals[$column];
           }
         }
 
