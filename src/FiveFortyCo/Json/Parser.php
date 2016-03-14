@@ -672,6 +672,7 @@ class Parser
           $tables[$table]['row_count'] = count($csvRows);
 
           $types = [];
+
           foreach ($row->getRow() as $column=>$val) {
 
             if ($val !== null) {
@@ -700,11 +701,25 @@ class Parser
 
             }
 
-            $tables[$table]['column'][$column]['datatype'] = $type;
+
             $tables[$table]['column'][$column]['primarykey'] = $primaryKey;
+            $tables[$table]['column'][$column]['vals'][] = $val;
             $tables[$table]['column'][$column]['unique'] = $unique;
+
           }
 
+          $allNumeric = true;
+          foreach ($tables[$table]['column'][$column]['vals'] as $v) {
+            if (!is_numeric($v)) {
+              $allNumeric = false;
+            }
+          }
+
+          if ($allNumeric == true) {
+            $tables[$table]['column'][$column]['datatype'] = "number";
+          } else {
+            $tables[$table]['column'][$column]['datatype'] = "string";
+          }
 
 
         }
