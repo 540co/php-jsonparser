@@ -647,18 +647,6 @@ class Parser
         return $this->csvTables;
     }
 
-    private function getValueType($val) {
-
-      if (is_numeric($val)) {
-        return "number";
-      }
-
-      if (is_null($val)) {
-        return "null";
-      }
-
-      return "string";
-    }
 
     public function getCsvTableDetails() {
       $tables = [];
@@ -666,76 +654,160 @@ class Parser
       foreach ($this->csvTables as $table=>$csvRows) {
         $tables[$table] = array();
 
+        $tables[$table]['column_count'] = count($csvRows[0]->getRow());
+        $tables[$table]['row_count'] = count($csvRows);
+
+        foreach ($csvRows[0]->getRow() as $column=>$val) {
+
+          if ($column == "@RECORDID" && $table == 'root') {
+            $unique = TRUE;
+          } else {
+            $unique = FALSE;
+          }
+
+          if ($column == "@ROWID") {
+            $primaryKey = TRUE;
+          } else {
+            $primaryKey = FALSE;
+          }
+
+          if ($column == "@PARENT") {
+
+            $tables[$table]['relationships'][$val]['from'] = array('table'=>$table, 'column'=>'@PARENTROWID');
+            $tables[$table]['relationships'][$val]['to'] = array('table'=>$val, 'column'=>'@ROWID');
+
+            $tables[$table]['relationships']['@RECORDID']['from'] = array('table'=>$table, 'column'=>'@RECORDID');
+            $tables[$table]['relationships']['@RECORDID']['to'] = array('table'=>'root', 'column'=>'@RECORDID');
+
+          }
+
+
+          $tables[$table]['column'][$column]['primarykey'] = $primaryKey;
+
+          $tables[$table]['column'][$column]['unique'] = $unique;
+          $tables[$table]['column'][$column]['datatype'] = "string";
+
+
+
+        }
+
+        $vals = array();
         foreach ($csvRows as $rowNum=>$row) {
-
-          $tables[$table]['column_count'] = count($csvRows[0]->getRow());
-          $tables[$table]['row_count'] = count($csvRows);
-
-          $types = [];
-
           foreach ($row->getRow() as $column=>$val) {
-
-            if ($val !== null) {
-              $type = $this->getValueType($val);
-            }
-
-            if ($column == "@RECORDID" && $table == 'root') {
-              $unique = TRUE;
-            } else {
-              $unique = FALSE;
-            }
-
-            if ($column == "@ROWID") {
-              $primaryKey = TRUE;
-            } else {
-              $primaryKey = FALSE;
-            }
-
-            if ($column == "@PARENT") {
-
-              $tables[$table]['relationships'][$val]['from'] = array('table'=>$table, 'column'=>'@PARENTROWID');
-              $tables[$table]['relationships'][$val]['to'] = array('table'=>$val, 'column'=>'@ROWID');
-
-              $tables[$table]['relationships']['@RECORDID']['from'] = array('table'=>$table, 'column'=>'@RECORDID');
-              $tables[$table]['relationships']['@RECORDID']['to'] = array('table'=>'root', 'column'=>'@RECORDID');
-
-            }
-
-
-            $tables[$table]['column'][$column]['primarykey'] = $primaryKey;
-            $tables[$table]['column'][$column]['vals'][] = $val;
-            $tables[$table]['column'][$column]['unique'] = $unique;
-            $tables[$table]['column'][$column]['datatype'] = "string";
-
+            $vals[$column][] = $val;
           }
-          /*
+        }
+
+
+        //$tables[$table]['vals'] = $vals;
+
+        foreach ($csvRows as $rowNum=>$row) {
           foreach ($row->getRow() as $column=>$val) {
-
-            $allNumeric = true;
-            foreach ($tables[$table]['column'][$column]['vals'] as $v) {
-              if (!is_numeric($v)) {
-                $allNumeric = false;
-              }
-            }
-
-            if ($allNumeric == true) {
-              $tables[$table]['column'][$column]['datatype'] = "number";
-            } else {
-              $tables[$table]['column'][$column]['datatype'] = "string";
-            }
-
-            unset($tables[$table]['column'][$column]['vals']);
-
+            $tables[$table]['value_analysis'][$column] = array();
+            $tables[$table]['value_analysis'][$column]['minmax_length'] = $this->analyzeMinMaxLengthVals($vals[$column]);
+            $tables[$table]['value_analysis'][$column]['isNumericOrNull_percent'] = $this->analyzeNumericVals($vals[$column]);
+            $tables[$table]['value_analysis'][$column]['isBoolOrNull_percent'] = $this->analyzeBooleanVals($vals[$column]);
+            $tables[$table]['value_analysis'][$column]['isNull_percent'] = $this->analyzeBooleanVals($vals[$column]);
+            $tables[$table]['value_analysis'][$column]['isDate_percent'] = $this->analyzeDateVals($vals[$column]);
+            $tables[$table]['value_analysis'][$column]['vals'] = $vals[$column];
           }
-          */
-
-
         }
 
       }
 
       ksort($tables);
       return $tables;
+    }
+
+
+    private function analyzeDateVals($vals) {
+      $totalCount = count($vals);
+      $dateCount = 0;
+
+      foreach ($vals as $k=>$v) {
+        $d = date_parse($v);
+        if (($d['error_count'] == 0 || $v == null) {
+          $dateCount++;
+        }
+
+      }
+
+      return $dateCount / $totalCount;
+    }
+
+    private function analyzeMinMaxLengthVals($vals) {
+      $min = null;
+      $max = null;
+
+      foreach ($vals as $k=>$v) {
+        $len = strlen($v);
+
+        if ($min == null && $max == null) {
+          $min = $len;
+          $max = $len;
+          continue;
+        }
+
+        if ($len < $min) {
+          $min = $len;
+        }
+
+        if ($len > $max) {
+          $max = $len;
+        }
+
+      }
+
+
+      return array('min'=>$min, 'max'=>$max);
+    }
+
+    private function analyzeNumericVals($vals) {
+      $totalCount = count($vals);
+      $numericCount = 0;
+
+      foreach ($vals as $k=>$v) {
+        if (strlen($v) !== 0) {
+          if (is_numeric($v)) {
+            $numericCount++;
+          }
+        } else {
+          $numericCount++;
+        }
+      }
+      return $numericCount / $totalCount;
+    }
+
+    private function analyzeBooleanVals($vals) {
+      $totalCount = count($vals);
+      $booleanCount = 0;
+
+      foreach ($vals as $k=>$v) {
+        if (strlen($v) !== 0) {
+          if (is_bool($v)) {
+            $booleanCount++;
+          }
+        } else {
+          $booleanCount++;
+        }
+      }
+      return $booleanCount / $totalCount;
+    }
+
+    private function analyzeNullVals($vals) {
+      $totalCount = count($vals);
+      $nullCount = 0;
+
+      foreach ($vals as $k=>$v) {
+        if (strlen($v) !== 0) {
+          if (is_null($v)) {
+            $nullCount++;
+          }
+        } else {
+          $nullCount++;
+        }
+      }
+      return $nullCount / $totalCount;
     }
 
     /**
