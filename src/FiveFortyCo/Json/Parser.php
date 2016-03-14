@@ -726,7 +726,7 @@ class Parser
 
       foreach ($vals as $k=>$v) {
         $d = date_parse($v);
-        if (($d['error_count'] == 0 || $v == null) {
+        if ($d['error_count'] == 0 || $v == null) {
           $dateCount++;
         }
 
