@@ -17,6 +17,7 @@ $parser = \FiveFortyCo\Json\Parser::create(new \Monolog\Logger('json-parser'));
 $parser->process($r);
 $csvTables = $parser->getCsvTables();
 $csvTableDetails = $parser->getCsvTableDetails();
+$csvTableDetailsWithValAnalysis = $parser->getCsvTableDetails(TRUE);
 
 //var_dump($csvTables);
-var_dump($csvTableDetails);
+print_r($csvTableDetails);

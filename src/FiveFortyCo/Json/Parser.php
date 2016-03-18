@@ -648,7 +648,7 @@ class Parser
     }
 
 
-    public function getCsvTableDetails() {
+    public function getCsvTableDetails($analyzeVals=FALSE) {
       $tables = [];
 
       foreach ($this->csvTables as $table=>$csvRows) {
@@ -683,34 +683,32 @@ class Parser
 
 
           $tables[$table]['column'][$column]['primarykey'] = $primaryKey;
-
           $tables[$table]['column'][$column]['unique'] = $unique;
 
-
-
-
         }
 
-        $vals = array();
-        foreach ($csvRows as $rowNum=>$row) {
-          foreach ($row->getRow() as $column=>$val) {
-            $vals[$column][] = $val;
+        if ($analyzeVals == TRUE) {
+
+          $vals = array();
+          foreach ($csvRows as $rowNum=>$row) {
+            foreach ($row->getRow() as $column=>$val) {
+              $vals[$column][] = $val;
+            }
           }
-        }
 
-
-        //$tables[$table]['vals'] = $vals;
-
-        foreach ($csvRows as $rowNum=>$row) {
-          foreach ($row->getRow() as $column=>$val) {
-            $tables[$table]['column'][$column]['value_analysis']['minmax_length'] = $this->analyzeMinMaxLengthVals($vals[$column]);
-            $tables[$table]['column'][$column]['value_analysis']['isNumericOrNull_percent'] = $this->analyzeNumericVals($vals[$column]);
-            $tables[$table]['column'][$column]['value_analysis']['isBoolOrNull_percent'] = $this->analyzeBooleanVals($vals[$column]);
-            $tables[$table]['column'][$column]['value_analysis']['isNull_percent'] = $this->analyzeBooleanVals($vals[$column]);
-            $tables[$table]['column'][$column]['value_analysis']['isDate_percent'] = $this->analyzeDateVals($vals[$column]);
-            //$tables[$table]['value_analysis'][$column]['vals'] = $vals[$column];
+          foreach ($csvRows as $rowNum=>$row) {
+            foreach ($row->getRow() as $column=>$val) {
+              $tables[$table]['column'][$column]['value_analysis']['minmax_length'] = $this->analyzeMinMaxLengthVals($vals[$column]);
+              $tables[$table]['column'][$column]['value_analysis']['isNumericOrNull_percent'] = $this->analyzeNumericVals($vals[$column]);
+              $tables[$table]['column'][$column]['value_analysis']['isBoolOrNull_percent'] = $this->analyzeBooleanVals($vals[$column]);
+              $tables[$table]['column'][$column]['value_analysis']['isNull_percent'] = $this->analyzeBooleanVals($vals[$column]);
+              $tables[$table]['column'][$column]['value_analysis']['isDate_percent'] = $this->analyzeDateVals($vals[$column]);
+            }
           }
+
+
         }
+
 
       }
 
